@@ -1,0 +1,213 @@
+services:
+
+  # ============================================================
+  # TRAEFIK - Reverse Proxy / Entry Point
+  # ============================================================
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+
+    command:
+      # Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # File provider
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
+
+      # HTTP
+      - "--entrypoints.web.address=:80"
+
+      # HTTPS
+      - "--entrypoints.websecure.address=:443"
+
+      # Access logging
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8080"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
+
+    networks:
+      - zt-net
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # AUTHELIA - Authentication / Access Control
+  # ============================================================
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+
+    volumes:
+      - ./authelia:/config
+
+    labels:
+      - "traefik.enable=true"
+
+      # Authelia login page
+      - "traefik.http.routers.authelia.rule=Host(`auth.soc.example.com`)"
+      - "traefik.http.routers.authelia.entrypoints=websecure"
+      - "traefik.http.routers.authelia.tls=true"
+
+      # Authelia listens on 9091
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+
+    networks:
+      - zt-net
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # WHOAMI - Protected Test Application
+  # ============================================================
+  whoami:
+    image: traefik/whoami
+    container_name: whoami
+
+    labels:
+      - "traefik.enable=true"
+
+      # Protected HTTPS application
+      - "traefik.http.routers.whoami.rule=Host(`whoami.soc.example.com`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls=true"
+
+      # Authentication through Authelia
+      - "traefik.http.routers.whoami.middlewares=authelia@file"
+
+      # whoami listens on port 80
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+
+    networks:
+      - zt-net
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # LOKI - Log Storage
+  # ============================================================
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: loki
+
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/tmp/loki
+
+    ports:
+      - "3100:3100"
+
+    networks:
+      - zt-net
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # ALLOY - Log Collector
+  # ============================================================
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "/etc/alloy/config.alloy"
+
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy
+
+    ports:
+      - "12345:12345"
+
+    networks:
+      - zt-net
+
+    depends_on:
+      - loki
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # GRAFANA - SOC Dashboard / Visualization
+  # ============================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - zt-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # ============================================================
+  # BACKEND - Flask SOC REST API
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+
+    container_name: soc-backend
+
+    ports:
+      - "5000:5000"
+
+    networks:
+      - zt-net
+
+    restart: unless-stopped
+
+
+# ==============================================================
+# VOLUMES
+# ==============================================================
+volumes:
+
+  loki-data:
+    name: homelab_loki-data
+
+  alloy-data:
+    name: homelab_alloy-data
+
+  grafana-data:
+    name: homelab_grafana-data
+
+
+# ==============================================================
+# NETWORK
+# ==============================================================
+networks:
+
+  zt-net:
+    name: zt-net
+    external: true

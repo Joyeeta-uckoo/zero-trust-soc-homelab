@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Zero Trust SOC</title>
+
+
+    <!-- =================================================
+         CSS
+         ================================================= -->
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+    <div class="app">
+
+
+        <!-- =================================================
+             HEADER
+             ================================================= -->
+
+        <header class="header">
+
+            <div>
+
+                <h1>🛡️ Zero Trust SOC</h1>
+
+                <p>
+                    Security Operations Dashboard
+                </p>
+
+            </div>
+
+
+            <div class="status">
+
+                <span class="status-dot"></span>
+
+                System Online
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =================================================
+             STATISTICS
+             ================================================= -->
+
+        <section class="stats">
+
+
+            <!-- TOTAL EVENTS -->
+
+            <div class="stat-card">
+
+                <span class="stat-title">
+                    TOTAL EVENTS
+                </span>
+
+                <span
+                    class="stat-value"
+                    id="total-events"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <!-- HIGH SEVERITY -->
+
+            <div class="stat-card high">
+
+                <span class="stat-title">
+                    HIGH SEVERITY
+                </span>
+
+                <span
+                    class="stat-value"
+                    id="high-events"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <!-- FAILED AUTHENTICATION -->
+
+            <div class="stat-card warning">
+
+                <span class="stat-title">
+                    FAILED AUTHENTICATION
+                </span>
+
+                <span
+                    class="stat-value"
+                    id="failed-auth"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <!-- UNAUTHORIZED -->
+
+            <div class="stat-card danger">
+
+                <span class="stat-title">
+                    UNAUTHORIZED
+                </span>
+
+                <span
+                    class="stat-value"
+                    id="unauthorized"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             SECURITY ACTIVITY
+             ================================================= -->
+
+        <section class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Security Activity
+                    </h2>
+
+                    <p>
+                        Real-time security event overview
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <button id="refresh-btn">
+                        Refresh
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="activity">
+
+
+                <!-- ALL EVENTS -->
+
+                <div class="activity-item">
+
+                    <span class="activity-label">
+                        All Security Events
+                    </span>
+
+                    <div class="bar">
+
+                        <div
+                            class="bar-fill"
+                            id="activity-events"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- HIGH SEVERITY -->
+
+                <div class="activity-item">
+
+                    <span class="activity-label">
+                        High Severity Events
+                    </span>
+
+                    <div class="bar">
+
+                        <div
+                            class="bar-fill"
+                            id="activity-high"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             RECENT SECURITY EVENTS
+             ================================================= -->
+
+        <section class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Recent Security Events
+                    </h2>
+
+                    <p>
+                        Events collected from Loki
+                    </p>
+
+                </div>
+
+
+                <span id="last-updated">
+                    Last updated: -
+                </span>
+
+            </div>
+
+
+
+            <div class="table-container">
+
+
+                <table>
+
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                TIME
+                            </th>
+
+                            <th>
+                                SOURCE
+                            </th>
+
+                            <th>
+                                CATEGORY
+                            </th>
+
+                            <th>
+                                EVENT
+                            </th>
+
+                            <th>
+                                STATUS
+                            </th>
+
+                            <th>
+                                PATH
+                            </th>
+
+                            <th>
+                                SEVERITY
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+
+                    <tbody id="events-table">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="loading"
+                            >
+                                Loading security events...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             GRAFANA ANALYTICS
+             ================================================= -->
+
+        <section class="panel grafana-panel">
+
+
+            <div class="panel-header">
+
+
+                <div>
+
+                    <h2>
+                        Grafana Security Analytics
+                    </h2>
+
+                    <p>
+                        Security monitoring and log analytics
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="http://localhost:3000/d/adkw58d/soc-homelab-dashboard?from=now-24h&to=now&timezone=browser"
+                    target="_blank"
+                    class="grafana-link"
+                >
+                    Open Grafana ↗
+                </a>
+
+
+            </div>
+
+
+
+            <div class="grafana-container">
+
+
+                <iframe
+                    src="http://localhost:3000/d/adkw58d/soc-homelab-dashboard?orgId=1&from=now-24h&to=now&timezone=browser&kiosk"
+                    title="Grafana SOC Dashboard"
+                    loading="lazy"
+                >
+                </iframe>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             FOOTER
+             ================================================= -->
+
+        <footer>
+
+            <span>
+                Zero Trust SOC Homelab
+            </span>
+
+            <span>
+                Flask • Loki • Alloy • Traefik • Authelia • Grafana
+            </span>
+
+        </footer>
+
+
+    </div>
+
+
+
+    <!-- =================================================
+         JAVASCRIPT
+         ================================================= -->
+
+    <script
+        src="{{ url_for('static', filename='js/dashboard.js') }}"
+    >
+    </script>
+
+
+</body>
+
+</html>

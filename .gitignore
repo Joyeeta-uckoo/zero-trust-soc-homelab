@@ -1,0 +1,23 @@
+# Secrets / credentials
+authelia/users_database.yml
+authelia/configuration.yml
+
+# TLS certificates / private keys
+certs/
+traefik/certs/
+
+# Runtime / persistent data
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.*
+
+# Docker / OS junk
+docker-compose.override.yml
+.DS_Store
+Thumbs.db
+# Authelia runtime / notification data
+authelia/notification.txt
